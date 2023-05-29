@@ -1,0 +1,6 @@
+.venv/
+.idea/
+test2.py/
+.vscode
+env
+extracted_reflexes_data/
