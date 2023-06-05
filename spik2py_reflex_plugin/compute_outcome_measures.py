@@ -1,5 +1,4 @@
  
-from spike2py.trial import TrialInfo, Trial
 from tqdm import tqdm
 
 import scipy
@@ -12,6 +11,7 @@ from dataclasses import dataclass
 def compute_peak2peak_area(waveform):
     data_for_stats = waveform
     peak_to_peak = np.ptp(data_for_stats)
+    
     dx = 0.1  # Spacing of integration points along axis of x
     area = scipy.integrate.simpson(abs(data_for_stats), dx=dx)
     return peak_to_peak, area
