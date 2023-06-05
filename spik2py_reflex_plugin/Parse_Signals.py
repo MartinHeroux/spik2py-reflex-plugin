@@ -1,5 +1,4 @@
 from spik2py_reflex_plugin import compute_outcome_measures
-from spik2py_reflex_plugin.helper_functions import signal_cleaning, trains_extraction
 from spik2py_reflex_plugin import utlis
 from dataclasses import dataclass
 import numpy as np

@@ -87,18 +87,14 @@ class Train_preprocessing:
             for i in range(0, len(self.filteredtrains), 2):
                 starttrain_time= self.filteredtrains[i][1]
                 endtrain_time=self.filteredtrains[i+1][1]
-                print("strttraintime")
-                print(starttrain_time)
-                print (endtrain_time)
-                print(self.trial_object)
+                
     
                 #alltriggers_between_trains=self.unclassified_triggger[np.where(self.intensitytime == starttrain_time)[0] + 1:np.where(self.intensitytime == endtrain_time)[0]]
                 #now i need to find the stable periods and then filter them  
                 stable_periods=ExtractStabletrains(self.trial_object,starttrain_time,endtrain_time).extract_stable() 
-                print("below is styable")
-                print(stable_periods)
+                
                 #now need to produce the ( "sINGLE trains pulse, trigger time")
-                singletranspulse=[]
+                
                 for cleantrigger in self.unclassified_triggger:
                     for stable in stable_periods:
                         if cleantrigger>=stable[3]-0.1 and cleantrigger<=stable[3]:

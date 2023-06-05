@@ -1,6 +1,6 @@
 #this is the userinput class 
 import numpy as np
-class User_Specified_Data:
+class user_specified_data:
     """Extract user specified window from data"""
     def __init__(self, raw_data,triggerchannel,range,khz_clean):
         self.event_data = raw_data

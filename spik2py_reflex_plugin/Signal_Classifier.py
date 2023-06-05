@@ -28,6 +28,7 @@ class Difference_Calculator:
             return leftdiff
         except:
             return None
+        
     def rightdiff(self):
         '''Takes in a number n, returns the square of n'''
         index = self.index
@@ -99,14 +100,16 @@ class Single_Pulse(Event):
         return self.name
     def meet_condition(self):
   
-       
-        if self.left_diff==None:
+        if self.left_diff is None and self.right_diff is None:
+            return self.name,True
+        
+        elif self.left_diff is None:
             if self.right_diff > 1 and self.right_diff > self.paired_pulse_isi:
                 return self.name , True
             else:
                 return self.name ,False
         
-        elif self.right_diff==None:
+        elif self.right_diff is None:
             if self.left_diff > 1 and self.left_diff > self.paired_pulse_isi:
                 return self.name , True
             else:
@@ -175,12 +178,8 @@ class Trains(Event):
     def getname(self):
         return self.name
 
-    def meet_condition(self):
-        
-        
-        
-            
-        if self.left_diff==None :
+    def meet_condition(self):  
+        if self.left_diff is None :
             
             if self.right_diff_5 / 5 < self.per_s_train:
                 self.name="Trains_Start"
@@ -188,7 +187,7 @@ class Trains(Event):
             else:
                 return self.name ,False
         
-        elif self.right_diff==None:
+        elif self.right_diff is None:
             if self.left_diff_5 / 5 < self.per_s_train:
                 self.name="Trains_End"
                 return self.name , True
@@ -242,7 +241,7 @@ class Pulse_Classifier:
         for index,trigger in enumerate(self.unclassified_trigger):
             if skip_next:
                 skip_next = False
-                continue # skip 
+                continue # skip
             for subclass in Event.__subclasses__():
                 name,boolval=subclass(self.unclassified_trigger,trigger,param).meet_condition()
                 if boolval==True:

@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from spik2py_reflex_plugin import compute_outcome_measures
+
 from spik2py_reflex_plugin.Parse_Signals import Parse_Avg
 
 class Base_Graph:
@@ -15,7 +15,7 @@ class Base_Graph:
 
 
         
-    def generate_individual_graph(self):
+    def generate_individual_graph(self,pretriggertime_ms):
     
         fig, (ax1, ax2,ax5,ax4) = plt.subplots(4, 1, sharex=True,figsize=(10, 6))
         ax1.eventplot(self.triggercleaned, orientation='horizontal', colors='g')
@@ -25,12 +25,24 @@ class Base_Graph:
         ax4.plot(self.trial.Fdi.times,self.trial.Fdi.values)
         
         ax5.plot(self.trial.Stim.times,self.trial.Stim.values)
-        
+        #plot the grey intervals and the trigger times
     
         plt.xlim(self.userstarttime, self.userendtime)
         
         plt.ylim(-1,1)
         
+        masteronset=[]
+        for i,x in enumerate(self.results):
+            if x.name=="pairedpulse":
+                ax4.axvspan(self.trial.Fdi.times[x.pulse1.startindex], self.trial.Fdi.times[x.pulse2.endindex], alpha=0.2, color='gray')
+                ax4.axvspan(self.trial.Fdi.times[x.pulse1.startindex], self.trial.Fdi.times[x.pulse2.endindex], alpha=0.2, color='gray')
+                masteronset.append(self.trial.Fdi.times[x.pulse1.triggerindex])
+                masteronset.append(self.trial.Fdi.times[x.pulse2.triggerindex])
+            else:
+                ax4.axvspan(self.trial.Fdi.times[x.startindex], self.trial.Fdi.times[x.endindex], alpha=0.2, color='gray')
+                masteronset.append(self.trial.Fdi.times[x.triggerindex])
+        ax4.vlines(x=list(filter(lambda x: x is not None, masteronset)), ymin=ax4.get_ylim()[0], ymax=ax4.get_ylim()[1], colors='red', ls=':', lw=1, label='vline_single - full height')
+                
         
         plt.savefig(self.filepath,dpi = 300,orientation='landscape')
         
@@ -44,7 +56,7 @@ class Base_Graph:
                 ymin= np.min(np.array(self.trial.Fdi.values[x.triggerindex:x.endindex]))
                 y_range = ymax - ymin
                
-                plt.xlim([self.trial.Fdi.times[x.triggerindex],  self.trial.Fdi.times[x.endindex]])
+                plt.xlim([self.trial.Fdi.times[x.triggerindex]-pretriggertime_ms,  self.trial.Fdi.times[x.endindex]])
                 text1 = fig.text(0.5, 0.95, f"hi", ha='center', va='top')
                 text2 = fig.text(0.9, 0.90, f"Onset:{round(x.relativeonset, 2)}" if x.onset is not None else "", ha='center', va='top')
                 text3 = fig.text(0.9, 0.80, f"Area:{round(x.area, 2)}" if x.area is not None else "", ha='center', va='top')
@@ -53,7 +65,7 @@ class Base_Graph:
                 
                 plt.ylim([ymin - 0.1*y_range,ymax +0.1*y_range])
                 fig.text(0.5, 0.95, "hi", ha='center', va='top')
-                
+               
                 
                 
                 plt.savefig(f"{self.filepath}_{i}.png",dpi = 300,orientation='landscape')
@@ -111,7 +123,7 @@ class Base_Graph:
                 text7 = fig.text(0.9, 0.60, f"Peak to peak2: {round(x.pulse2.peak_to_peak, 2) if x.pulse2.peak_to_peak is not None else ''}", ha='center', va='top')
                 text8 = fig.text(0.9, 0.50, f"Peak to peak ratio: {round(x.peak_to_peak_ratio, 2) if x.peak_to_peak_ratio is not None else ''}", ha='center', va='top')
                 text9 = fig.text(0.9, 0.40, f"area ratio: {round(x.area_ratio, 2) if x.area_ratio is not None else ''}", ha='center', va='top')
-
+                
                 
                 plt.savefig(f"{self.filepath}_{i}_paired.png",dpi = 300,orientation='landscape')
                 
@@ -204,6 +216,13 @@ class Grouped_Graph:
 
         for ppindex,pp in enumerate(self.list):
             allwaveforms=[]
+            subgraph:any
+            try:
+                subgraph=ax1[ppindex]
+            except:
+                subgraph=ax1
+                
+                
             for wave in pp:
                 timeaxis = np.linspace(0, time_elapsed, num=len(wave.waveform))
                 x_new = timeaxis
@@ -211,7 +230,7 @@ class Grouped_Graph:
                 allwaveforms.append(wave.waveform)
 
                 
-                ax1[ppindex].plot(x_new,wave.waveform,color=(0.8, 0.8, 0.8))
+                subgraph.plot(x_new,wave.waveform,color=(0.8, 0.8, 0.8))
             max_len = max(len(arr) for arr in allwaveforms)
             print(max_len)
             # Resize the arrays to have the same shape
@@ -220,8 +239,8 @@ class Grouped_Graph:
             avg_arr = np.mean(resized_list, axis=0)
             avg_timeaxis = np.linspace(0,  time_elapsed, num=len(avg_arr))
            
-            ax1[ppindex].plot(avg_timeaxis,avg_arr,color='red')
-            ax1[ppindex].text(0.95, 0.95, f" {pp[0].intensity}", transform=ax1[ppindex].transAxes, ha='right', va='top')
+            subgraph.plot(avg_timeaxis,avg_arr,color='red')
+            subgraph.text(0.95, 0.95, f" {pp[0].intensity}", transform=subgraph.transAxes, ha='right', va='top')
             if pp[0].name=="single_trans_pulse":
             
                 data=Parse_Avg().Parse_Trains_Single(avg_arr,avg_timeaxis,pp[0].intensity)

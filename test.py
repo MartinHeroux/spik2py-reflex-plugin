@@ -1,21 +1,15 @@
-from spik2py_reflex_plugin import refactor
+
 from spike2py.trial import TrialInfo, Trial
+from spik2py_reflex_plugin import demo
 import json
 import os
-"""
-02_data001_C_M
-02_data002_HF_M
-04_ds7_cct17
-04_ds7_setup000
-"""
-#file="C:/Users/wanho/Downloads/02_data000_HF_B.mat"
-#ile="C:/Users/wanho/Downloads/data/02_data001_C_M.mat"
+
 with open('data.json', 'r') as f:
     data = json.load(f)
 
 subject=data['sub_ID']
 trialcondition=["kHz_monophasic","kHz_biphasic","conventional_monophasic","conventional_biphasic"]
-subtrialconditionlist=["threshold_window","doubles_105_threshold_window","doubles_5_mmax_window","trains_threshold_window"]
+subtrialconditionlist=["mmax_window","threshold_window","doubles_105_threshold_window","doubles_5_mmax_window","trains_threshold_window"]
 list=[]
 for x in trialcondition:
     
@@ -86,4 +80,4 @@ for i in list:
     "userendtime": i[5],
     }
     khz_clean=10
-    refactor.extract_evoked_responses(data,triggerchannel,range,khz_clean,data_file_path)
+    demo.extract_evoked_responses(data,triggerchannel,range,khz_clean,data_file_path)
