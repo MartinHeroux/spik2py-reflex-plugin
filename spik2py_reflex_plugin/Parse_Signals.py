@@ -1,7 +1,12 @@
 from spik2py_reflex_plugin import compute_outcome_measures
 from spik2py_reflex_plugin import utlis
 from dataclasses import dataclass
+from spik2py_reflex_plugin.Graph import Base_Graph
+from spik2py_reflex_plugin.Grouped_Graph import Grouped_Graph
 import numpy as np
+import pickle
+
+from tqdm import tqdm
 @dataclass
 class SinglePulse:
     name:str
@@ -42,7 +47,35 @@ class SingleTransPulse:
     
 
 class Parse:
-    """no documentation yet"""
+    """Class for pulse parsing
+
+    Parameters
+    ----------
+    self.single_pre: int
+        time to include before the trigger in ms 
+
+    self.single_post
+        time to include after the trigger in ms 
+    self.double_pre
+        time to include after the fist trigger in ms 
+    self.double_post
+        time to include after the second trigger in ms
+
+    self.trains_pre
+        time to include after the trigger in ms 
+    self.trains_post
+        time to include after the trigger in ms 
+
+    
+
+    Attributes
+    ----------
+
+    Output
+    ----------
+    A list of dataclass objects 
+    
+    """
     def __init__(self,settings,trial,mode):
        
         self.single_pre=settings.presingle
@@ -56,7 +89,7 @@ class Parse:
         
     
     def parsesingle(self,trigger):
-        import numpy as np
+        
         
         
         
@@ -74,7 +107,8 @@ class Parse:
         intensity_index = np.searchsorted(self.trial.Stim.times, target)
 
         # find artifact start time
-        skip_artifact_start_time = self.trial.Fdi.times[trigger_index] + 0.005
+        ARTIFACT_TIME_MS=0.005
+        skip_artifact_start_time = self.trial.Fdi.times[trigger_index] + ARTIFACT_TIME_MS
         artifact_start_index = np.searchsorted(times[trigger_index:end_index], skip_artifact_start_time) + trigger_index
         artifact_end_index = np.searchsorted(times[trigger_index:end_index], skip_artifact_start_time + 0.09) + trigger_index
 
@@ -264,6 +298,122 @@ class Parse_Avg:
         return data
 
 
+class Parse_All_Pulses:
+    """Class for organisning the parsed results.
 
+    Parameters
+    ----------
+    data : Spike2py trail object 
+        See Trial.trial for more info.
+    post_trains_entire_classified_list: List[tuples()]
+        this consists of the output from the classifer class , for single pulses, it 
+        should containa named tuple like this (("single_pulse),(34)), where the first item 
+        is the name of the classified pusle and the second the trigger time of that pulse as 
+        appeared in the mat file and orginal channel. 
+        For double pulse, it will be something like (("double"),(firsttriigger),(secondtrigger))
+    parsesettings:
+        
+    graphsettings:
 
+    the values for parsesettings and graphsettings are ambiguous and could be refactored into
+    something more readable 
 
+    Attributes
+    ----------
+    
+    """
+
+    def __init__(self,data,post_trains_entire_classified_list,parsesettings,graphsettings):
+        self.data=data
+        self.post_trains_entire_classified_list=post_trains_entire_classified_list
+        self.parsesettings=parsesettings
+        self.graphsettings=graphsettings
+        self.single=None
+        self.double=None
+        self.trains=None
+        self.master=None
+        self.group_single=None
+        self.group_double=None
+        self.group_trains=None
+        
+
+        
+    
+    def parse_all(self):
+        
+        lookup_table = {
+        "Single_Pulse": Parse(self.parsesettings,self.data,"single").parsesingle,
+        "Single_Trains_pulse":Parse(self.parsesettings,self.data,"trains").parsetrans,
+        "Paired_Pulse": Parse(self.parsesettings,self.data,"double").parsedouble
+        }
+        single_pulse_result=[]
+        double_pulse_result=[]
+        trains_pulse_result=[]
+    
+
+        for trigger in tqdm(self.post_trains_entire_classified_list):
+            try:
+                result=lookup_table[trigger[0]](trigger)
+                if result.name=="single_trans_pulse":
+                    trains_pulse_result.append(result)
+                elif result.name=="singlepulse":
+                    single_pulse_result.append(result)
+                elif result.name=="pairedpulse":
+                    double_pulse_result.append(result)
+            except Exception as error:
+                print(str(error))
+                break
+
+        
+        
+        self.single=single_pulse_result
+        self.double=double_pulse_result
+        self.trains=trains_pulse_result
+        self.master=single_pulse_result+double_pulse_result+trains_pulse_result
+      
+        
+        
+        return self.group_pulses()
+
+    def group_pulses(self):
+        self.single=utlis.Group_Individual_Pulses(self.single)
+        self.double=utlis.Group_Individual_Pulses(self.double)
+        self.trains=utlis.Group_Individual_Pulses(self.trains)
+        
+        return self
+
+    
+    def plot_individual(self):
+        
+       
+        Base_Graph(self.graphsettings["settings"],self.master,self.graphsettings["range"],self.graphsettings["filepath"]).generate_individual_graph(0.25,0.25)
+        return self.single+self.double+self.trains
+    
+    def plot_group(self):
+        
+        #row= length of grouped single
+        group_single=[]
+        group_double=[]
+        group_trains=[]
+        
+        if len( self.single)!=0:
+            group_single=Grouped_Graph(self.graphsettings["filepath"],self.single,self.parsesettings).generate_group_graph("single")
+        
+        
+        if len(self.double)!=0:
+            group_double=Grouped_Graph(self.graphsettings["filepath"],self.double,self.parsesettings).generate_paired_graph()
+
+        
+        if len(self.trains)!=0:
+            group_trains=Grouped_Graph(self.graphsettings["filepath"],self.trains,self.parsesettings).generate_group_graph("trains")
+        
+        #groupedpickled=grouped_masterresult
+
+        return group_single+group_double+group_trains
+
+    def pickle(self):
+        filepath=self.graphsettings["filepath"]
+        self.plot_group()
+        with open(f"{filepath}_data.pickle", "wb") as file:
+            pickle.dump({"individual":self.single+self.double+self.trains,"grouped":self.group_single+self.group_double+self.group_trains}, file)
+        return

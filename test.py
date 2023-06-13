@@ -40,6 +40,7 @@ for i in list:
     img_path=os.path.join(trialconditionfolder, "img")
     if subtrialcondition=="mmax_window":
         triggerchannel=data.Mmax.times
+        
     else:
         triggerchannel=data.Ds8.times
 

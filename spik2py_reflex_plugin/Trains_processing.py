@@ -10,8 +10,6 @@ class ExtractStabletrains:
         
         startintensityindex=np.where(self.intensitytime >= self.starttraintime)[0][0]
         endintensityindex=np.where(self.intensitytime >= self.endtraintime)[0][0]
-        print(startintensityindex)
-        print(endintensityindex)
         filteredintensityarray= self.intensityvalues[startintensityindex:endintensityindex]
         #now need to extract the stable periood.
         firstderivative = [filteredintensityarray[i+1]-filteredintensityarray[i] if i+1<len(filteredintensityarray) else 0 for i in range(len(filteredintensityarray))]
@@ -52,8 +50,7 @@ class ExtractStabletrains:
             else:
                 
                 stable.remove(x)
-        print(stable)
-        print ("above is stable")
+        
         return stable
 
         
@@ -71,18 +68,18 @@ class Train_preprocessing:
     def extract_trains_period(self):
         test_list = self.data
  
-# initialize target list
+
         tar_list = ['Trains_Start','Trains_End']
         self.filteredtrains = [tup for tup in test_list if any(i in tup for i in tar_list)]
         
-        print(self.filteredtrains)
+        
         self.data_removed_trainsblock = [tup for tup in test_list if not any(i in tup for i in tar_list)]
-        self.flatten_trains_block()
-        return  self
+        
+        return  self.flatten_trains_block()
 
     def flatten_trains_block(self):
         if self.filteredtrains==[]:
-            return self 
+            return self.data_removed_trainsblock
         else:
             for i in range(0, len(self.filteredtrains), 2):
                 starttrain_time= self.filteredtrains[i][1]
@@ -99,6 +96,6 @@ class Train_preprocessing:
                     for stable in stable_periods:
                         if cleantrigger>=stable[3]-0.1 and cleantrigger<=stable[3]:
                             self.data_removed_trainsblock.append(("Single_Trains_pulse",cleantrigger))
-
+            return self.data_removed_trainsblock
 
                 
